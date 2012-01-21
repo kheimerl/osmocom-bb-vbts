@@ -345,6 +345,26 @@ static void l1ctl_rx_param_req(struct msgb *msg)
 	l1s.tx_power = par_req->tx_power;
 }
 
+/* receive a L1CTL_WAKEUP_REQ from L23 */
+static void l1ctl_rx_wakeup_req(struct msgb *msg)
+{
+        int i;
+	uint16_t *info_ptr;
+	uint8_t data[2];
+
+	struct l1ctl_hdr *l1h           = (struct l1ctl_hdr *) msg->data;
+	struct l1ctl_info_ul *ul        = (struct l1ctl_info_ul *) l1h->data;
+	struct l1ctl_rach_req *rach_req = (struct l1ctl_rach_req *) ul->payload;
+
+	printd("L1CTL_WAKEUP_REQ (arfcn=%d, offset=%d combined=%d)\n",
+	       rach_req->ra, rach_req->offset, 
+	       rach_req->combined);
+
+	l1s_tx_wakeup_cmd(rach_req->ra);
+
+	return 0;
+}
+
 /* receive a L1CTL_RACH_REQ from L23 */
 static void l1ctl_rx_rach_req(struct msgb *msg)
 {
@@ -675,6 +695,9 @@ void l1a_l23_handler(void)
 	case L1CTL_SIM_REQ:
 		l1ctl_sim_req(msg);
 		break;
+	case L1CTL_WAKEUP_REQ:
+	        l1ctl_rx_wakeup_req(msg);
+	        break;
 	}
 
 exit_msgbfree:

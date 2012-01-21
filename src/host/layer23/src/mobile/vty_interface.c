@@ -753,6 +753,25 @@ DEFUN(network_select, network_select_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN(wakeup, wakeup_cmd, "wakeup MS_NAME ARFCN",
+      "Wakeup the BTS associated with the given ARFCN. \n Send RACH Burst\n.")
+{
+        struct osmocom_ms *ms;
+        int arfcn;
+	
+	ms = get_ms(argv[0], vty);
+	if (!ms)
+	  return CMD_WARNING;
+
+	arfcn = atoi(argv[1]);
+
+	vty_out(vty, "Wake up ARFCN '%d'\n", arfcn, VTY_NEWLINE);
+
+	l1ctl_tx_wakeup_req(ms, arfcn);
+
+	return CMD_SUCCESS;
+}
+
 DEFUN(call, call_cmd, "call MS_NAME (NUMBER|emergency|answer|hangup|hold)",
 	"Make a call\nName of MS (see \"show ms\")\nPhone number to call "
 	"(Use digits '0123456789*#abc', and '+' to dial international)\n"
@@ -785,18 +804,19 @@ DEFUN(call, call_cmd, "call MS_NAME (NUMBER|emergency|answer|hangup|hold)",
 	else if (!strcmp(number, "hold"))
 		mncc_hold(ms);
 	else {
-		llist_for_each_entry(abbrev, &set->abbrev, list) {
-			if (!strcmp(number, abbrev->abbrev)) {
-				number = abbrev->number;
-				vty_out(vty, "Dialing number '%s'%s", number,
-					VTY_NEWLINE);
-				break;
-			}
-		}
-		if (vty_check_number(vty, number))
-			return CMD_WARNING;
-		mncc_call(ms, number);
-	}
+
+	  llist_for_each_entry(abbrev, &set->abbrev, list) {
+	      if (!strcmp(number, abbrev->abbrev)) {
+		number = abbrev->number;
+		vty_out(vty, "Dialing number '%s'%s", number,
+			VTY_NEWLINE);
+		break;
+	      }
+	    }
+	    if (vty_check_number(vty, number))
+	      return CMD_WARNING;
+	    mncc_call(ms, number);
+	  }
 
 	return CMD_SUCCESS;
 }
@@ -2770,6 +2790,7 @@ int ms_vty_init(void)
 	install_element(ENABLE_NODE, &service_cmd);
 	install_element(ENABLE_NODE, &test_reselection_cmd);
 	install_element(ENABLE_NODE, &delete_forbidden_plmn_cmd);
+	install_element(ENABLE_NODE, &wakeup_cmd);
 
 #ifdef _HAVE_GPSD
 	install_element(CONFIG_NODE, &cfg_gps_host_cmd);

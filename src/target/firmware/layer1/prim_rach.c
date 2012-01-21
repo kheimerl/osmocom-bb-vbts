@@ -55,6 +55,34 @@ struct {
 	uint16_t band_arfcn;
 } last_rach;
 
+int l1s_tx_wakeup_cmd(uint16_t arfcn)
+{
+        int i;
+        uint16_t *info_ptr;
+	uint8_t  data[2];
+
+	putchart('T'); 
+
+	/* Not sure about following */
+
+	l1s_tx_apc_helper(arfcn);
+	
+	/* BSIC == Network color code (3) + BTS Color Code (3) */
+ 	data[0] = 2; /* l1s.serving_cell.bsic << 2 */
+	data[1] = 1; 
+
+	info_ptr = &dsp_api.ndb->d_rach;
+	info_ptr[0] = ((uint16_t)(data[0])) | ((uint16_t)(data[1])<<8);
+
+	dsp_api.db_w->d_task_ra = RACH_DSP_TASK;
+
+	/* Real deal. */
+	l1s_tx_win_ctrl(arfcn, L1_TXWIN_AB, 0, 3);
+
+	return 0;
+}
+
+
 /* p1: type of operation (0: one NB, 1: one RACH burst, 2: four NB */
 static int l1s_tx_rach_cmd(__unused uint8_t p1, __unused uint8_t p2, __unused uint16_t p3)
 {

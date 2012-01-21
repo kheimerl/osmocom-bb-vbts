@@ -435,6 +435,30 @@ int l1ctl_tx_crypto_req(struct osmocom_ms *ms, uint8_t algo, uint8_t *key,
 	return osmo_send_l1(ms, msg);
 }
 
+/* Transmit L1CTL_WAKEUP_REQ */
+int l1ctl_tx_wakeup_req(struct osmocom_ms *ms, int arfcn)
+{
+	struct msgb *msg;
+	struct l1ctl_info_ul *ul;
+	struct l1ctl_rach_req *req;
+
+	msg = osmo_l1_alloc(L1CTL_WAKEUP_REQ);
+	if (!msg)
+		return -1;
+
+	DEBUGP(DL1C, "WAKEUP Req. arfcn=%d", arfcn);
+	ul = (struct l1ctl_info_ul *) msgb_put(msg, sizeof(*ul));
+	req = (struct l1ctl_rach_req *) msgb_put(msg, sizeof(*req));
+
+	req->ra = arfcn; /* overload. */
+	req->offset = 3;
+	req->combined = 1;
+
+	return osmo_send_l1(ms, msg);
+}
+
+
+
 /* Transmit L1CTL_RACH_REQ */
 int l1ctl_tx_rach_req(struct osmocom_ms *ms, uint8_t ra, uint16_t offset,
 	uint8_t combined)
