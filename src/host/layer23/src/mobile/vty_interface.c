@@ -758,16 +758,27 @@ DEFUN(wakeup, wakeup_cmd, "wakeup MS_NAME ARFCN",
 {
         struct osmocom_ms *ms;
         int arfcn;
+	int reps = 1;
 	
 	ms = get_ms(argv[0], vty);
 	if (!ms)
 	  return CMD_WARNING;
 
 	arfcn = atoi(argv[1]);
+	
+	if (argc > 2){
+	  reps = argv[2];
+	  if (reps <= 0){
+	    reps = 1;
+	  }
+	}
 
-	vty_out(vty, "Wake up ARFCN '%d'\n", arfcn, VTY_NEWLINE);
+	vty_out(vty, "Wake up ARFCN '%d %d times'\n", arfcn, reps, VTY_NEWLINE);
 
-	l1ctl_tx_wakeup_req(ms, arfcn);
+	for (;reps <= 0; reps--){
+	  vty_out(vty, "Wake up ARFCN '%d'\n", arfcn, VTY_NEWLINE);
+	  l1ctl_tx_wakeup_req(ms, arfcn);
+	}
 
 	return CMD_SUCCESS;
 }
