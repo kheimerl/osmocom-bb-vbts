@@ -753,7 +753,7 @@ DEFUN(network_select, network_select_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(wakeup, wakeup_cmd, "wakeup MS_NAME ARFCN",
+DEFUN(wakeup, wakeup_cmd, "wakeup MS_NAME ARFCN [reps]",
       "Wakeup the BTS associated with the given ARFCN. \n Send RACH Burst\n.")
 {
         struct osmocom_ms *ms;
@@ -767,7 +767,7 @@ DEFUN(wakeup, wakeup_cmd, "wakeup MS_NAME ARFCN",
 	arfcn = atoi(argv[1]);
 	
 	if (argc > 2){
-	  reps = argv[2];
+	  reps = atoi(argv[2]);
 	  if (reps <= 0){
 	    reps = 1;
 	  }
@@ -775,7 +775,7 @@ DEFUN(wakeup, wakeup_cmd, "wakeup MS_NAME ARFCN",
 
 	vty_out(vty, "Wake up ARFCN '%d %d times'\n", arfcn, reps, VTY_NEWLINE);
 
-	for (;reps <= 0; reps--){
+	for (;reps > 0; reps--){
 	  vty_out(vty, "Wake up ARFCN '%d'\n", arfcn, VTY_NEWLINE);
 	  l1ctl_tx_wakeup_req(ms, arfcn);
 	}
