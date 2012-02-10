@@ -21,6 +21,7 @@ struct osmocom_ms;
 #include <osmocom/bb/mobile/mncc_sock.h>
 #include <osmocom/bb/common/sim.h>
 #include <osmocom/bb/common/l1ctl.h>
+#include <osmocom/bb/mobile/wakeup.h>
 
 struct osmosap_entity {
 	osmosap_cb_t msg_handler;
@@ -75,6 +76,7 @@ struct osmocom_ms {
 	struct gsm48_cclayer cclayer;
 	struct osmomncc_entity mncc_entity;
 	struct llist_head trans_list;
+        struct gsm_wakeupBTS wakeupBTS;
 };
 
 enum osmobb_sig_subsys {

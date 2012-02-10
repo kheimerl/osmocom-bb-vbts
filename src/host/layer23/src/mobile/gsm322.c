@@ -678,7 +678,7 @@ static void start_plmn_timer(struct gsm322_plmn *plmn, int secs)
 }
 
 /* stop plmn search timer */
-static void stop_plmn_timer(struct gsm322_plmn *plmn)
+void stop_plmn_timer(struct gsm322_plmn *plmn)
 {
 	if (osmo_timer_pending(&plmn->timer)) {
 		LOGP(DPLMN, LOGL_INFO, "Stopping pending timer.\n");
@@ -696,7 +696,7 @@ void start_cs_timer(struct gsm322_cellsel *cs, int sec, int micro)
 }
 
 /* stop cell selection timer */
-static void stop_cs_timer(struct gsm322_cellsel *cs)
+void stop_cs_timer(struct gsm322_cellsel *cs)
 {
 	if (osmo_timer_pending(&cs->timer)) {
 		LOGP(DCS, LOGL_DEBUG, "stopping pending CS timer.\n");
@@ -718,7 +718,7 @@ void start_any_timer(struct gsm322_cellsel *cs, int sec, int micro)
 }
 
 /* stop cell selection timer */
-static void stop_any_timer(struct gsm322_cellsel *cs)
+void stop_any_timer(struct gsm322_cellsel *cs)
 {
 	if (osmo_timer_pending(&cs->any_timer)) {
 		LOGP(DCS, LOGL_DEBUG, "stopping pending 'any cell selection' "
@@ -787,7 +787,7 @@ const char *get_cs_state_name(int value)
 }
 
 /* new automatic PLMN search state */
-static void new_a_state(struct gsm322_plmn *plmn, int state)
+void new_a_state(struct gsm322_plmn *plmn, int state)
 {
 	if (plmn->ms->settings.plmn_mode != PLMN_MODE_AUTO) {
 		LOGP(DPLMN, LOGL_FATAL, "not in auto mode, please fix!\n");
@@ -817,7 +817,7 @@ static void new_m_state(struct gsm322_plmn *plmn, int state)
 }
 
 /* new Cell selection state */
-static void new_c_state(struct gsm322_cellsel *cs, int state)
+void new_c_state(struct gsm322_cellsel *cs, int state)
 {
 	LOGP(DCS, LOGL_INFO, "new state '%s' -> '%s'\n",
 		get_cs_state_name(cs->state), get_cs_state_name(state));
@@ -3814,7 +3814,8 @@ static int gsm322_a_event(struct osmocom_ms *ms, struct msgb *msg)
 		return 0;
 	}
 
-	rc = plmnastatelist[i].rout(ms, msg);
+	if ( !wakeup_process_next_arfcn(ms) )
+	  rc = plmnastatelist[i].rout(ms, msg);
 
 	return rc;
 }
@@ -4047,7 +4048,8 @@ int gsm322_c_event(struct osmocom_ms *ms, struct msgb *msg)
 		return 0;
 	}
 
-	rc = cellselstatelist[i].rout(ms, msg);
+	if ( !wakeup_process_next_arfcn(ms) )
+	  rc = cellselstatelist[i].rout(ms, msg);
 
 	return rc;
 }
@@ -5168,3 +5170,7 @@ int gsm322_exit(struct osmocom_ms *ms)
 				entry));
 	return 0;
 }
+
+
+
+

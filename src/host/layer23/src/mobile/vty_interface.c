@@ -40,6 +40,7 @@
 #include <osmocom/bb/mobile/gsm480_ss.h>
 #include <osmocom/bb/mobile/gsm411_sms.h>
 #include <osmocom/vty/telnet_interface.h>
+#include <osmocom/bb/mobile/wakeup.h>
 
 void *l23_ctx;
 
@@ -753,31 +754,23 @@ DEFUN(network_select, network_select_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(wakeup, wakeup_cmd, "wakeup MS_NAME ARFCN [reps]",
+DEFUN(wakeup, wakeup_cmd, "wakeup MS_NAME #ARFCN ARFCN1 ... ARFCNn [reps]",
       "Wakeup the BTS associated with the given ARFCN. \n Send RACH Burst\n.")
 {
         struct osmocom_ms *ms;
-        int arfcn;
+	struct gsm_wakeupBTS *wakeupBTS;
+
+        int arfcn, count, i=0;
 	int reps = 1;
 	
 	ms = get_ms(argv[0], vty);
 	if (!ms)
 	  return CMD_WARNING;
 
-	arfcn = atoi(argv[1]);
-	
-	if (argc > 2){
-	  reps = atoi(argv[2]);
-	  if (reps <= 0){
-	    reps = 1;
-	  }
-	}
-
-	vty_out(vty, "Wake up ARFCN '%d %d times'\n", arfcn, reps, VTY_NEWLINE);
-
-	for (;reps > 0; reps--){
-	  vty_out(vty, "Wake up ARFCN '%d'\n", arfcn, VTY_NEWLINE);
-	  l1ctl_tx_wakeup_req(ms, arfcn);
+	if ( process_wakeup_cmd(ms, argc, argv) ){
+	  vty_out(vty, "BTS wakeup is processing ... '\n", VTY_NEWLINE);
+	} else {
+	  vty_out(vty, "BTS wakeup is not allowed in current state! \n", VTY_NEWLINE);
 	}
 
 	return CMD_SUCCESS;
