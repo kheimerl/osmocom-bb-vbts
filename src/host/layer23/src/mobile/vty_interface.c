@@ -754,7 +754,7 @@ DEFUN(network_select, network_select_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(wakeup, wakeup_cmd, "wakeup MS_NAME #ARFCN ARFCN1 ... ARFCNn [reps]",
+DEFUN(wakeup, wakeup_cmd, "wakeup MS_NAME ARFCNs ARFCN1 ARFCNn [reps]",
       "Wakeup the BTS associated with the given ARFCN. \n Send RACH Burst\n.")
 {
         struct osmocom_ms *ms;
@@ -770,7 +770,8 @@ DEFUN(wakeup, wakeup_cmd, "wakeup MS_NAME #ARFCN ARFCN1 ... ARFCNn [reps]",
 	if ( process_wakeup_cmd(ms, argc, argv) ){
 	  vty_out(vty, "BTS wakeup is processing ... '\n", VTY_NEWLINE);
 	} else {
-	  vty_out(vty, "BTS wakeup is not allowed in current state! \n", VTY_NEWLINE);
+	  vty_out(vty, "BTS wakeup is not allowed in PLMN state: '%s' and CS state: '%s' \n", get_cs_state_name(ms->plmn.state), get_cs_state_name(ms->cellsel.state), 
+		  VTY_NEWLINE);
 	}
 
 	return CMD_SUCCESS;

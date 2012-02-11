@@ -42,9 +42,11 @@ int wakeup_allowed(struct osmocom_ms *ms)
         struct gsm322_cellsel *cs = &ms->cellsel;
 	struct gsm322_plmn    *plmn = &ms->plmn;
 
-	if ( ( plmn->state == GSM322_ANY_SEARCH ||
+	if ( ( plmn->state == GSM322_A0_NULL ||
+	       plmn->state == GSM322_ANY_SEARCH ||
 	       plmn->state == GSM322_A4_WAIT_FOR_PLMN ||
 	       plmn->state == GSM322_A5_HPLMN_SEARCH ) &&
+
 	     (cs->state == GSM322_C0_NULL ||
 	      cs->state == GSM322_C6_ANY_CELL_SEL ||
 	      cs->state == GSM322_C9_CHOOSE_ANY_CELL ||
@@ -83,6 +85,7 @@ int process_wakeup_cmd(struct osmocom_ms *ms, int argc, char **argv)
 	wakeupBTS->arfcns      = calloc(1, sizeof(int)*count);
 	wakeupBTS->arfcn_count = count;
 	wakeupBTS->curr_arfcn  = 0;
+	wakeupBTS->state       = GSM_WAKEUP_INITIATED;
 	
 	/* Loop to get ARFCN */
 	for ( i=0; i<count; i++ )
@@ -141,22 +144,8 @@ int wakeup_l1cmd_and_timer (struct osmocom_ms *ms)
 	//	wakeupBTS->timer.timeout);
 	
 	/* Set the appropraite fields. */
-
-	if ( wakeupBTS->curr_arfcn == 0 ) 
-	  wakeupBTS->state |= GSM_WAKEUP_TRYING_FIRST;
-
 	wakeupBTS->ms = ms;
 	wakeupBTS->state = GSM_WAKEUP_WAIT_FOR_PA;
-
-	if ( wakeupBTS->curr_arfcn == wakeupBTS->arfcn_count ) {
-	  /* For last ARFCN; if we fail to camp we fall back to the
-	   * conventional GSM way of life.
-	   */
-	  wakeupBTS->state |= GSM_WAKEUP_TRYING_LAST;
-	} else if ( wakeupBTS->curr_arfcn < wakeupBTS->arfcn_count ) {
-	  wakeupBTS->state |= GSM_WAKEUP_TRYING_NEXT;
-	}
-	
 	wakeupBTS->timer.cb   = wakeup_timer_timeout;
 	wakeupBTS->timer.data = wakeupBTS;
 
@@ -198,6 +187,8 @@ void wakeup_timer_timeout(void *arg)
 	struct gsm_subscriber *subscr = &ms->subscr;
 	struct msgb *nmsg;
 
+	int mask=0;
+
 	LOGP(DPLMN, LOGL_INFO, "Wakeup, PA power up timer has fired.\n");
 
 	/* Turn on the radio */
@@ -211,21 +202,27 @@ void wakeup_timer_timeout(void *arg)
 	  /* Initiate PLMN/CS selection and camping process */
 	  
 	  /* 1.) Setup the stick bit. */
-
 	  set->stick = 1;
 	  set->stick_arfcn = wakeupBTS->arfcns[wakeupBTS->curr_arfcn];
 
-	  /* 2.) Setup proper state */
+	  /* 2.) Setup proper state. */
+	  wakeupBTS->curr_arfcn++;
 
-	  if ( wakeupBTS->state == GSM_WAKEUP_TRYING_FIRST ){
-	    wakeupBTS->curr_arfcn = 1;
-	  } else if ( wakeupBTS->state == GSM_WAKEUP_TRYING_NEXT ){
-	    wakeupBTS->curr_arfcn++;
-	  }
-	  wakeupBTS->state = ~(GSM_WAKEUP_WAIT_FOR_PA);
+	  /* State setup. */
+
+	  if ( wakeupBTS->curr_arfcn == 0 ) 
+	    wakeupBTS->state = GSM_WAKEUP_TRYING_FIRST;
+	  
+	  if ( wakeupBTS->curr_arfcn == wakeupBTS->arfcn_count )
+	    /* For last ARFCN; if we fail to camp we fall back to the
+	     * conventional GSM way of life.
+	     */
+	    wakeupBTS->state = GSM_WAKEUP_TRYING_LAST;
+	  
+	  if ( wakeupBTS->curr_arfcn < wakeupBTS->arfcn_count )
+	    wakeupBTS->state = GSM_WAKEUP_TRYING_NEXT;
 
 	  /* 3.) Initiate conventional GSM camping process. */
-
 	  /* if there is a registered PLMN, we will try to see if this is our 
 	   * candidate BTS. As for future enchancemnet, the PLMN data be 
 	   * possibly stored on SIM.
